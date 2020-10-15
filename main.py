@@ -19,7 +19,7 @@ async def animate_spaceship(canvas, row, column, frames):
         for frame in frames:
             frame_rows, frame_columns = get_frame_size(frame)
             draw_frame(canvas, row, column, frame)
-            for i in range(2):
+            for _ in range(2):
                 await asyncio.sleep(0)
             draw_frame(canvas, row, column, frame, negative=True)
 
@@ -71,19 +71,19 @@ async def blink(canvas, row, column, symbol='*', pause=0):
         await asyncio.sleep(0)
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for i in range(15):
+        for _ in range(15):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_NORMAL)
-        for i in range(2):
+        for _ in range(2):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for i in range(3):
+        for _ in range(3):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_NORMAL)
-        for i in range(2):
+        for _ in range(2):
             await asyncio.sleep(0)
 
 
