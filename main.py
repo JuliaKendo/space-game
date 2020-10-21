@@ -3,39 +3,40 @@ import time
 import glob
 import curses
 import asyncio
-from numpy import random
+import random
+
+from itertools import cycle
 from curses_tools import draw_frame, read_controls, get_frame_size
 
 
 TIC_TIMEOUT = 0.1
 MAX_PAUSE_BEFORE_BLINK = 20
+OFFSET_FROM_EDGE_OF_SCREEN = 1
+FRAME_OFFSET = 2
 KINDS_OF_STARS = ['+', '*', '.', ':']
 ROCKET_SPEED = os.getenv('ROCKET_SPEED', default='1')
 
 
 async def animate_spaceship(canvas, row, column, frames):
     screen_rows, screen_columns = canvas.getmaxyx()
-    while True:
-        for frame in frames:
-            frame_rows, frame_columns = get_frame_size(frame)
-            draw_frame(canvas, row, column, frame)
-            for _ in range(2):
-                await asyncio.sleep(0)
-            draw_frame(canvas, row, column, frame, negative=True)
-
+    max_row, max_column = screen_rows - OFFSET_FROM_EDGE_OF_SCREEN, screen_columns - OFFSET_FROM_EDGE_OF_SCREEN
+    for frame in cycle(frames):
+        frame_rows, frame_columns = get_frame_size(frame)
+        for _ in range(2):
             rows_direction, columns_direction, space_pressed = read_controls(canvas)
 
-            next_row = row + rows_direction * int(ROCKET_SPEED)
-            max_row = screen_rows - frame_rows
-            if 0 <= min(0 if next_row < 0 else next_row, max_row - 1) < max_row:
-                row = min(0 if next_row < 0 else next_row, max_row - 1)
-                row = row if row else 1
+            row = max(
+                OFFSET_FROM_EDGE_OF_SCREEN,
+                min(row + rows_direction * int(ROCKET_SPEED), max_row - frame_rows)
+            )
+            column = max(
+                OFFSET_FROM_EDGE_OF_SCREEN,
+                min(column + columns_direction * int(ROCKET_SPEED), max_column - frame_columns)
+            )
 
-            next_column = column + columns_direction * int(ROCKET_SPEED)
-            max_column = screen_columns - frame_columns
-            if 0 <= min(0 if next_column < 0 else next_column, max_column - 1) < max_column:
-                column = min(0 if next_column < 0 else next_column, max_column - 1)
-                column = column if column else 1
+            draw_frame(canvas, row, column, frame)
+            await asyncio.sleep(0)
+            draw_frame(canvas, row, column, frame, negative=True)
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -54,7 +55,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
     symbol = '-' if columns_speed else '|'
 
     rows, columns = canvas.getmaxyx()
-    max_row, max_column = rows - 1, columns - 1
+    max_row, max_column = rows - OFFSET_FROM_EDGE_OF_SCREEN, columns - OFFSET_FROM_EDGE_OF_SCREEN
 
     curses.beep()
 
@@ -89,27 +90,28 @@ async def blink(canvas, row, column, symbol='*', pause=0):
 
 def get_stars(canvas, rows, columns):
     coroutines = []
-    array = random.randint(0, round(rows / columns * 100), (rows - 2, columns - 2))
-    for number_of_row, row in enumerate(array):
-        for number_of_column, value in enumerate(row):
-            if not value == (round(rows / columns * 100)) - 1:
-                continue
-            coroutines.append(
-                blink(
-                    canvas,
-                    number_of_row + 1,
-                    number_of_column + 1,
-                    random.choice(KINDS_OF_STARS),
-                    random.randint(0, MAX_PAUSE_BEFORE_BLINK)
-                )
+    screen_side_ratio = round(rows / columns * 100)
+    for cell_number in range(1, (rows * columns) - columns):
+        row_number = round(cell_number / columns + 0.5)
+        column_number = cell_number - columns * (row_number - 1)
+        if not random.randint(0, screen_side_ratio) == screen_side_ratio or column_number == 0:
+            continue
+        coroutines.append(
+            blink(
+                canvas,
+                row_number,
+                column_number,
+                random.choice(KINDS_OF_STARS),
+                random.randint(0, MAX_PAUSE_BEFORE_BLINK)
             )
+        )
     return coroutines
 
 
 def load_rocket_frames():
     rocket_frames = []
-    for rocket_frame_file in glob.glob('frames/*.txt'):
-        with open(rocket_frame_file, 'r') as file_handler:
+    for rocket_frame_file_path in glob.glob('frames/*.txt'):
+        with open(rocket_frame_file_path, 'r') as file_handler:
             rocket_frames.append(file_handler.read())
     return rocket_frames
 
@@ -119,11 +121,12 @@ def draw(canvas):
     curses.curs_set(0)
     canvas.nodelay(True)
     rows, columns = canvas.getmaxyx()
+    middle_row, middle_column = int(rows / 2), int(columns / 2)
     rocket_frames = load_rocket_frames()
     coroutines = [
-        *get_stars(canvas, rows, columns),
-        fire(canvas, int(rows / 2), int(columns / 2)),
-        animate_spaceship(canvas, int(rows / 2) - 2, int(columns / 2) - 2, rocket_frames)
+        *get_stars(canvas, rows - OFFSET_FROM_EDGE_OF_SCREEN, columns - OFFSET_FROM_EDGE_OF_SCREEN),
+        fire(canvas, middle_row, middle_column),
+        animate_spaceship(canvas, middle_row - FRAME_OFFSET, middle_column - FRAME_OFFSET, rocket_frames)
     ]
     while True:
         for coroutine in coroutines.copy():
@@ -131,7 +134,6 @@ def draw(canvas):
                 coroutine.send(None)
             except StopIteration:
                 coroutines.remove(coroutine)
-                continue
         canvas.refresh()
         time.sleep(TIC_TIMEOUT)
 
