@@ -6,7 +6,12 @@ import asyncio
 import random
 
 from itertools import cycle
-from curses_tools import draw_frame, read_controls, get_frame_size
+from space_garbage import fly_garbage
+from curses_tools import (
+    draw_frame,
+    read_controls,
+    get_frame_size
+)
 
 
 TIC_TIMEOUT = 0.1
@@ -15,6 +20,25 @@ OFFSET_FROM_EDGE_OF_SCREEN = 1
 FRAME_OFFSET = 2
 KINDS_OF_STARS = ['+', '*', '.', ':']
 ROCKET_SPEED = os.getenv('ROCKET_SPEED', default='1')
+
+coroutines = []
+
+
+async def fill_orbit_with_garbage(canvas, rows, columns, frames):
+    screen_side_ratio = round(rows / columns * 100)
+    while True:
+        coroutines.append(
+            fly_garbage(
+                canvas,
+                random.randint(
+                    OFFSET_FROM_EDGE_OF_SCREEN,
+                    columns - OFFSET_FROM_EDGE_OF_SCREEN
+                ),
+                random.choice(frames)
+            )
+        )
+        for _ in range(random.randint(0, screen_side_ratio * 2)):
+            await asyncio.sleep(0)
 
 
 async def animate_spaceship(canvas, row, column, frames):
@@ -110,23 +134,34 @@ def get_stars(canvas, rows, columns):
 
 def load_rocket_frames():
     rocket_frames = []
-    for rocket_frame_file_path in glob.glob('frames/*.txt'):
+    for rocket_frame_file_path in glob.glob('frames/rocket*.txt'):
         with open(rocket_frame_file_path, 'r') as file_handler:
             rocket_frames.append(file_handler.read())
     return rocket_frames
 
 
+def load_garbage_frames():
+    garbage_frames = []
+    for garbage_frame_file_path in glob.glob('frames/trash*.txt'):
+        with open(garbage_frame_file_path, 'r') as file_handler:
+            garbage_frames.append(file_handler.read())
+    return garbage_frames
+
+
 def draw(canvas):
+    global coroutines
     canvas.border()
     curses.curs_set(0)
     canvas.nodelay(True)
     rows, columns = canvas.getmaxyx()
     middle_row, middle_column = int(rows / 2), int(columns / 2)
     rocket_frames = load_rocket_frames()
+    garbage_frames = load_garbage_frames()
     coroutines = [
         *get_stars(canvas, rows - OFFSET_FROM_EDGE_OF_SCREEN, columns - OFFSET_FROM_EDGE_OF_SCREEN),
         fire(canvas, middle_row, middle_column),
-        animate_spaceship(canvas, middle_row - FRAME_OFFSET, middle_column - FRAME_OFFSET, rocket_frames)
+        animate_spaceship(canvas, middle_row - FRAME_OFFSET, middle_column - FRAME_OFFSET, rocket_frames),
+        fill_orbit_with_garbage(canvas, rows, columns, garbage_frames)
     ]
     while True:
         for coroutine in coroutines.copy():
