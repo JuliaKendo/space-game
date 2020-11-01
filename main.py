@@ -64,7 +64,9 @@ async def animate_spaceship(canvas, row, column, frames):
                 OFFSET_FROM_EDGE_OF_SCREEN,
                 min(column + columns_direction, max_column - frame_columns)
             )
-
+            coroutines.append(
+                fire(canvas, row, column + round(frame_columns / 2))
+            ) if space_pressed else True
             draw_frame(canvas, row, column, frame)
             await asyncio.sleep(0)
             draw_frame(canvas, row, column, frame, negative=True)
@@ -161,7 +163,6 @@ def draw(canvas):
     garbage_frames = load_garbage_frames()
     coroutines = [
         *get_stars(canvas, rows - OFFSET_FROM_EDGE_OF_SCREEN, columns - OFFSET_FROM_EDGE_OF_SCREEN),
-        fire(canvas, middle_row, middle_column),
         animate_spaceship(canvas, middle_row - FRAME_OFFSET, middle_column - FRAME_OFFSET, rocket_frames),
         fill_orbit_with_garbage(canvas, rows, columns, garbage_frames)
     ]
