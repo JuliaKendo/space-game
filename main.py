@@ -1,4 +1,3 @@
-import os
 import time
 import glob
 import curses
@@ -6,6 +5,7 @@ import asyncio
 import random
 
 from itertools import cycle
+from physics import update_speed
 from space_garbage import fly_garbage
 from curses_tools import (
     draw_frame,
@@ -19,7 +19,6 @@ MAX_PAUSE_BEFORE_BLINK = 20
 OFFSET_FROM_EDGE_OF_SCREEN = 1
 FRAME_OFFSET = 2
 KINDS_OF_STARS = ['+', '*', '.', ':']
-ROCKET_SPEED = os.getenv('ROCKET_SPEED', default='1')
 
 coroutines = []
 
@@ -46,20 +45,24 @@ async def fill_orbit_with_garbage(canvas, rows, columns, frames):
 
 
 async def animate_spaceship(canvas, row, column, frames):
+    row_speed = column_speed = 0
     screen_rows, screen_columns = canvas.getmaxyx()
     max_row, max_column = screen_rows - OFFSET_FROM_EDGE_OF_SCREEN, screen_columns - OFFSET_FROM_EDGE_OF_SCREEN
     for frame in cycle(frames):
         frame_rows, frame_columns = get_frame_size(frame)
         for _ in range(2):
             rows_direction, columns_direction, space_pressed = read_controls(canvas)
+            row_speed, column_speed = update_speed(row_speed, column_speed, rows_direction, columns_direction)
+            row += row_speed
+            column += column_speed
 
             row = max(
                 OFFSET_FROM_EDGE_OF_SCREEN,
-                min(row + rows_direction * int(ROCKET_SPEED), max_row - frame_rows)
+                min(row + rows_direction, max_row - frame_rows)
             )
             column = max(
                 OFFSET_FROM_EDGE_OF_SCREEN,
-                min(column + columns_direction * int(ROCKET_SPEED), max_column - frame_columns)
+                min(column + columns_direction, max_column - frame_columns)
             )
 
             draw_frame(canvas, row, column, frame)
