@@ -24,6 +24,11 @@ ROCKET_SPEED = os.getenv('ROCKET_SPEED', default='1')
 coroutines = []
 
 
+async def sleep(tics=1):
+    for _ in range(tics):
+        await asyncio.sleep(0)
+
+
 async def fill_orbit_with_garbage(canvas, rows, columns, frames):
     screen_side_ratio = round(rows / columns * 100)
     while True:
@@ -37,8 +42,7 @@ async def fill_orbit_with_garbage(canvas, rows, columns, frames):
                 random.choice(frames)
             )
         )
-        for _ in range(random.randint(0, screen_side_ratio * 2)):
-            await asyncio.sleep(0)
+        await sleep(random.randint(0, screen_side_ratio * 2))
 
 
 async def animate_spaceship(canvas, row, column, frames):
@@ -92,24 +96,19 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
 
 
 async def blink(canvas, row, column, symbol='*', pause=0):
-    for i in range(pause):
-        await asyncio.sleep(0)
+    await sleep(pause)
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for _ in range(15):
-            await asyncio.sleep(0)
+        await sleep(15)
 
         canvas.addstr(row, column, symbol, curses.A_NORMAL)
-        for _ in range(2):
-            await asyncio.sleep(0)
+        await sleep(2)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for _ in range(3):
-            await asyncio.sleep(0)
+        await sleep(3)
 
         canvas.addstr(row, column, symbol, curses.A_NORMAL)
-        for _ in range(2):
-            await asyncio.sleep(0)
+        await sleep(2)
 
 
 def get_stars(canvas, rows, columns):
