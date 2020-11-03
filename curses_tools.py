@@ -75,22 +75,3 @@ def get_frame_size(text):
     rows = len(lines)
     columns = max([len(line) for line in lines])
     return rows, columns
-
-
-def draw_frame_border(canvas, start_row, start_column, text, frame, offset_from_edge_of_screen):
-    rows, columns = canvas.getmaxyx()
-    frame_rows, frame_columns = get_frame_size(frame)
-    for offset_column in range(frame_columns):
-        next_column = min(round(start_column) + offset_column, columns - offset_from_edge_of_screen)
-        max_row = min(round(start_row) + frame_rows, rows - offset_from_edge_of_screen)
-        if next_column >= columns - offset_from_edge_of_screen or round(start_row) >= rows:
-            break
-        canvas.addstr(round(start_row), next_column, text)
-        canvas.addstr(max_row, next_column, text)
-    for offset_row in range(frame_rows):
-        next_row = min(round(start_row) + offset_row, rows - offset_from_edge_of_screen)
-        max_column = min(round(start_column) + frame_columns, columns - offset_from_edge_of_screen)
-        if next_row >= rows - offset_from_edge_of_screen or round(start_column) >= columns:
-            break
-        canvas.addstr(round(next_row), start_column, text)
-        canvas.addstr(next_row, max_column, text)

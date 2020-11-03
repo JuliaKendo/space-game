@@ -10,9 +10,9 @@ from space_garbage import fly_garbage
 from curses_tools import (
     draw_frame,
     read_controls,
-    get_frame_size,
-    draw_frame_border
+    get_frame_size
 )
+from obstacles import show_obstacles
 
 
 TIC_TIMEOUT = 0.1
@@ -22,33 +22,11 @@ FRAME_OFFSET = 2
 KINDS_OF_STARS = ['+', '*', '.', ':']
 
 coroutines = []
-obstacles = {}
+obstacles = []
 
 
 async def sleep(tics=1):
     for _ in range(tics):
-        await asyncio.sleep(0)
-
-
-async def show_garbages_borders(canvas, rows):
-    while True:
-        if not obstacles:
-            await asyncio.sleep(0)
-            continue
-        for key, garbage_position in obstacles.copy().items():
-            if len(garbage_position) == rows * 2:
-                obstacles.pop(key)
-                continue
-            if not garbage_position:
-                continue
-            for number, position in enumerate(garbage_position[-2:], 1):
-                row, column, frame = position
-                draw_frame_border(
-                    canvas, row, column,
-                    '.' if number == len(garbage_position[-2:]) else ' ',
-                    frame,
-                    OFFSET_FROM_EDGE_OF_SCREEN
-                )
         await asyncio.sleep(0)
 
 
@@ -126,6 +104,8 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         canvas.addstr(round(row), round(column), ' ')
         row += rows_speed
         column += columns_speed
+        if [obstacle for obstacle in obstacles if obstacle.has_collision(row, column)]:
+            return
 
 
 async def blink(canvas, row, column, symbol='*', pause=0):
@@ -193,8 +173,8 @@ def draw(canvas):
     coroutines = [
         *get_stars(canvas, rows - OFFSET_FROM_EDGE_OF_SCREEN, columns - OFFSET_FROM_EDGE_OF_SCREEN),
         animate_spaceship(canvas, middle_row - FRAME_OFFSET, middle_column - FRAME_OFFSET, rocket_frames),
-        fill_orbit_with_garbage(canvas, rows, columns, garbage_frames),
-        show_garbages_borders(canvas, rows)
+        fill_orbit_with_garbage(canvas, rows, columns, garbage_frames)
+        # show_obstacles(canvas, obstacles)
     ]
     while True:
         for coroutine in coroutines.copy():
