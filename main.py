@@ -10,7 +10,8 @@ from space_garbage import fly_garbage
 from curses_tools import (
     draw_frame,
     read_controls,
-    get_frame_size
+    get_frame_size,
+    draw_frame_border
 )
 
 
@@ -21,6 +22,7 @@ FRAME_OFFSET = 2
 KINDS_OF_STARS = ['+', '*', '.', ':']
 
 coroutines = []
+obstacles = {}
 
 
 async def sleep(tics=1):
@@ -28,8 +30,31 @@ async def sleep(tics=1):
         await asyncio.sleep(0)
 
 
+async def show_garbages_borders(canvas, rows):
+    while True:
+        if not obstacles:
+            await asyncio.sleep(0)
+            continue
+        for key, garbage_position in obstacles.copy().items():
+            if len(garbage_position) == rows * 2:
+                obstacles.pop(key)
+                continue
+            if not garbage_position:
+                continue
+            for number, position in enumerate(garbage_position[-2:], 1):
+                row, column, frame = position
+                draw_frame_border(
+                    canvas, row, column,
+                    '.' if number == len(garbage_position[-2:]) else ' ',
+                    frame,
+                    OFFSET_FROM_EDGE_OF_SCREEN
+                )
+        await asyncio.sleep(0)
+
+
 async def fill_orbit_with_garbage(canvas, rows, columns, frames):
     screen_side_ratio = round(rows / columns * 100)
+    number_of_garbage = 0
     while True:
         coroutines.append(
             fly_garbage(
@@ -38,9 +63,12 @@ async def fill_orbit_with_garbage(canvas, rows, columns, frames):
                     OFFSET_FROM_EDGE_OF_SCREEN,
                     columns - OFFSET_FROM_EDGE_OF_SCREEN
                 ),
-                random.choice(frames)
+                random.choice(frames),
+                obstacles,
+                number_of_garbage
             )
         )
+        number_of_garbage += 1
         await sleep(random.randint(0, screen_side_ratio * 2))
 
 
@@ -154,6 +182,7 @@ def load_garbage_frames():
 
 def draw(canvas):
     global coroutines
+    global obstacles
     canvas.border()
     curses.curs_set(0)
     canvas.nodelay(True)
@@ -164,7 +193,8 @@ def draw(canvas):
     coroutines = [
         *get_stars(canvas, rows - OFFSET_FROM_EDGE_OF_SCREEN, columns - OFFSET_FROM_EDGE_OF_SCREEN),
         animate_spaceship(canvas, middle_row - FRAME_OFFSET, middle_column - FRAME_OFFSET, rocket_frames),
-        fill_orbit_with_garbage(canvas, rows, columns, garbage_frames)
+        fill_orbit_with_garbage(canvas, rows, columns, garbage_frames),
+        show_garbages_borders(canvas, rows)
     ]
     while True:
         for coroutine in coroutines.copy():
