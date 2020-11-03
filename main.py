@@ -12,7 +12,6 @@ from curses_tools import (
     read_controls,
     get_frame_size
 )
-from obstacles import show_obstacles
 
 
 TIC_TIMEOUT = 0.1
@@ -23,6 +22,7 @@ KINDS_OF_STARS = ['+', '*', '.', ':']
 
 coroutines = []
 obstacles = []
+obstacles_in_last_collisions = set()
 
 
 async def sleep(tics=1):
@@ -43,6 +43,7 @@ async def fill_orbit_with_garbage(canvas, rows, columns, frames):
                 ),
                 random.choice(frames),
                 obstacles,
+                obstacles_in_last_collisions,
                 number_of_garbage
             )
         )
@@ -104,7 +105,9 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         canvas.addstr(round(row), round(column), ' ')
         row += rows_speed
         column += columns_speed
-        if [obstacle for obstacle in obstacles if obstacle.has_collision(row, column)]:
+        obstacles_has_collision = [obstacle.uid for obstacle in obstacles if obstacle.has_collision(row, column)]
+        if obstacles_has_collision:
+            obstacles_in_last_collisions.update(obstacles_has_collision)
             return
 
 
