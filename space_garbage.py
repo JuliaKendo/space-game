@@ -1,5 +1,6 @@
 import asyncio
 from obstacles import Obstacle
+from explosion import explode
 from curses_tools import draw_frame, get_frame_size
 
 
@@ -22,6 +23,8 @@ async def fly_garbage(canvas, column, garbage_frame, obstacles, knocked_down_gar
             Obstacle(row, column, frame_rows, frame_columns, uid=garbage_id)
         )
     else:
-        knocked_down_garbages.remove(garbage_id) if garbage_id in knocked_down_garbages else True
         for obstacle in [obstacle for obstacle in obstacles if obstacle.uid == garbage_id]:
             obstacles.remove(obstacle)
+        if garbage_id in knocked_down_garbages:
+            knocked_down_garbages.remove(garbage_id)
+            await explode(canvas, row, column)

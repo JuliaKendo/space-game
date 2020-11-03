@@ -25,6 +25,25 @@ obstacles = []
 obstacles_in_last_collisions = set()
 
 
+async def show_gameover(canvas):
+    game_over_frame = '''
+   _____                         ____                 
+  / ____|                       / __ \                
+ | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ __ 
+ | | |_ |/ _` | '_ ` _ \ / _ \ | |  | \ \ / / _ \ '__|
+ | |__| | (_| | | | | | |  __/ | |__| |\ V /  __/ |   
+  \_____|\__,_|_| |_| |_|\___|  \____/  \_/ \___|_|   
+                                                      
+                                                      '''
+    screen_rows, screen_columns = canvas.getmaxyx()
+    frame_rows, frame_columns = get_frame_size(game_over_frame)
+    row = round(screen_rows / 2 - frame_rows / 2)
+    column = round(screen_columns / 2 - frame_columns / 2)
+    while True:
+        draw_frame(canvas, row, column, game_over_frame)
+        await asyncio.sleep(0)
+
+
 async def sleep(tics=1):
     for _ in range(tics):
         await asyncio.sleep(0)
@@ -77,6 +96,9 @@ async def animate_spaceship(canvas, row, column, frames):
             draw_frame(canvas, row, column, frame)
             await asyncio.sleep(0)
             draw_frame(canvas, row, column, frame, negative=True)
+        if [obstacle for obstacle in obstacles if obstacle.has_collision(row, column + 1)]:
+            coroutines.append(show_gameover(canvas))
+            return
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -166,7 +188,7 @@ def load_garbage_frames():
 def draw(canvas):
     global coroutines
     global obstacles
-    canvas.border()
+    canvas.border(' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
     curses.curs_set(0)
     canvas.nodelay(True)
     rows, columns = canvas.getmaxyx()
