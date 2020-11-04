@@ -4,7 +4,10 @@ from explosion import explode
 from curses_tools import draw_frame, get_frame_size
 
 
-async def fly_garbage(canvas, column, garbage_frame, obstacles, knocked_down_garbages, garbage_id, speed=0.5):
+async def fly_garbage(
+    canvas, column, garbage_frame, garbage_id,
+    obstacles, obstacles_in_last_collisions, speed=0.5
+):
     """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
 
     rows_number, columns_number = canvas.getmaxyx()
@@ -14,7 +17,7 @@ async def fly_garbage(canvas, column, garbage_frame, obstacles, knocked_down_gar
     column = min(column, columns_number - 1)
 
     row = 0
-    while row < rows_number and garbage_id not in knocked_down_garbages:
+    while row < rows_number and garbage_id not in obstacles_in_last_collisions:
         draw_frame(canvas, row, column, garbage_frame)
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, garbage_frame, negative=True)
@@ -25,6 +28,6 @@ async def fly_garbage(canvas, column, garbage_frame, obstacles, knocked_down_gar
     else:
         for obstacle in [obstacle for obstacle in obstacles if obstacle.uid == garbage_id]:
             obstacles.remove(obstacle)
-        if garbage_id in knocked_down_garbages:
-            knocked_down_garbages.remove(garbage_id)
+        if garbage_id in obstacles_in_last_collisions:
+            obstacles_in_last_collisions.remove(garbage_id)
             await explode(canvas, row, column)

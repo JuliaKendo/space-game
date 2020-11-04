@@ -21,6 +21,7 @@ from curses_tools import (
 TIC_TIMEOUT = 0.1
 MAX_PAUSE_BEFORE_BLINK = 20
 OFFSET_FROM_EDGE_OF_SCREEN = 1
+YEAR_OF_GUN_AVAILABILITY = 1960
 FRAME_OFFSET = 2
 KINDS_OF_STARS = ['+', '*', '.', ':']
 
@@ -35,24 +36,24 @@ async def sleep(tics=1):
         await asyncio.sleep(0)
 
 
-async def update_information_window(information_window, column, tics):
+async def update_info_about_years(info_area, column, tics):
     for _ in range(tics):
         phrase = ' '.join([PHRASES[year], str(year)]) if PHRASES.get(year) else str(year)
-        information_window.addstr(0, 0, ' ' * (column - len(phrase)) + phrase)
-        information_window.refresh()
+        info_area.addstr(0, 0, ' ' * (column - len(phrase)) + phrase)
+        info_area.refresh()
         await asyncio.sleep(0)
 
 
 async def count_years(canvas):
     global year
     screen_rows, screen_columns = canvas.getmaxyx()
-    information_window_column, information_window_row = 50, 2
-    information_window = canvas.derwin(
-        screen_rows - information_window_row,
-        screen_columns - information_window_column
+    info_area_column, info_area_row = 50, 2
+    info_area = canvas.derwin(
+        screen_rows - info_area_row,
+        screen_columns - info_area_column
     )
     while True:
-        await update_information_window(information_window, information_window_column, 15)
+        await update_info_about_years(info_area, info_area_column, 15)
         year += 1
 
 
@@ -90,9 +91,8 @@ async def fill_orbit_with_garbage(canvas, rows, columns, frames):
                     columns - OFFSET_FROM_EDGE_OF_SCREEN
                 ),
                 random.choice(frames),
-                obstacles,
-                obstacles_in_last_collisions,
-                number_of_garbage
+                number_of_garbage, obstacles,
+                obstacles_in_last_collisions
             )
         )
         number_of_garbage += 1
@@ -119,13 +119,13 @@ async def animate_spaceship(canvas, row, column, frames):
                 OFFSET_FROM_EDGE_OF_SCREEN,
                 min(column + columns_direction, max_column - frame_columns)
             )
-            coroutines.append(
-                fire(canvas, row, column + round(frame_columns / 2), -3)
-            ) if space_pressed and year >= 1960 else True
             draw_frame(canvas, row, column, frame)
             await asyncio.sleep(0)
             draw_frame(canvas, row, column, frame, negative=True)
-        if [obstacle for obstacle in obstacles if obstacle.has_collision(row, column + 1)]:
+            coroutines.append(
+                fire(canvas, row, column + round(frame_columns / 2), -3)
+            ) if space_pressed and year >= YEAR_OF_GUN_AVAILABILITY else _
+        if [obstacle for obstacle in obstacles if obstacle.has_collision(row, column + FRAME_OFFSET)]:
             coroutines.append(show_gameover(canvas))
             return
 
@@ -159,7 +159,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         obstacles_in_last_collision = [obstacle.uid for obstacle in obstacles if obstacle.has_collision(row, column)]
         if not obstacles_in_last_collision:
             continue
-        obstacles_in_last_collisions.update(obstacles_in_last_collision)
+        obstacles_in_last_collisions.update(obstacles_in_last_collision) 
         return
 
 
@@ -209,7 +209,9 @@ def load_rocket_frames():
 
 def load_garbage_frames():
     garbage_frames = []
-    for garbage_frame_file_path in glob.glob('frames/trash*.txt'):
+    files = glob.glob('frames/trash*.txt')
+    files.extend(glob.glob('frames/[!rocket]*.txt'))
+    for garbage_frame_file_path in files:
         with open(garbage_frame_file_path, 'r') as file_handler:
             garbage_frames.append(file_handler.read())
     return garbage_frames
@@ -217,7 +219,6 @@ def load_garbage_frames():
 
 def draw(canvas):
     global coroutines
-    global obstacles
     canvas.border(' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
     curses.curs_set(0)
     canvas.nodelay(True)
