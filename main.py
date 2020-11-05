@@ -21,7 +21,7 @@ from curses_tools import (
 TIC_TIMEOUT = 0.1
 MAX_PAUSE_BEFORE_BLINK = 20
 OFFSET_FROM_EDGE_OF_SCREEN = 1
-YEAR_OF_GUN_AVAILABILITY = 1960
+YEAR_OF_GUN_AVAILABILITY = 2020
 FRAME_OFFSET = 2
 KINDS_OF_STARS = ['+', '*', '.', ':']
 
@@ -159,7 +159,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         obstacles_in_last_collision = [obstacle.uid for obstacle in obstacles if obstacle.has_collision(row, column)]
         if not obstacles_in_last_collision:
             continue
-        obstacles_in_last_collisions.update(obstacles_in_last_collision) 
+        obstacles_in_last_collisions.update(obstacles_in_last_collision)
         return
 
 
