@@ -92,7 +92,8 @@ async def fill_orbit_with_garbage(canvas, rows, columns, frames):
                 ),
                 random.choice(frames),
                 number_of_garbage, obstacles,
-                obstacles_in_last_collisions
+                obstacles_in_last_collisions,
+                random.uniform(0.1, 1)
             )
         )
         number_of_garbage += 1
@@ -122,10 +123,13 @@ async def animate_spaceship(canvas, row, column, frames):
             draw_frame(canvas, row, column, frame)
             await asyncio.sleep(0)
             draw_frame(canvas, row, column, frame, negative=True)
-            coroutines.append(
-                fire(canvas, row, column + round(frame_columns / 2), -3)
-            ) if space_pressed and year >= YEAR_OF_GUN_AVAILABILITY else _
-        if [obstacle for obstacle in obstacles if obstacle.has_collision(row, column + FRAME_OFFSET)]:
+            if space_pressed and year >= YEAR_OF_GUN_AVAILABILITY:
+                coroutines.append(
+                    fire(canvas, row, column + round(frame_columns / 2), -3)
+                )
+        for obstacle in obstacles:
+            if not obstacle.has_collision(row, column, frame_rows, frame_columns):
+                continue
             coroutines.append(show_gameover(canvas))
             return
 
@@ -209,9 +213,7 @@ def load_rocket_frames():
 
 def load_garbage_frames():
     garbage_frames = []
-    files = glob.glob('frames/trash*.txt')
-    files.extend(glob.glob('frames/[!rocket]*.txt'))
-    for garbage_frame_file_path in files:
+    for garbage_frame_file_path in glob.glob('frames/[!roc]*.txt'):
         with open(garbage_frame_file_path, 'r') as file_handler:
             garbage_frames.append(file_handler.read())
     return garbage_frames

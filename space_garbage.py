@@ -22,12 +22,26 @@ async def fly_garbage(
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, garbage_frame, negative=True)
         row += speed
-        obstacles.append(
-            Obstacle(row, column, frame_rows, frame_columns, uid=garbage_id)
-        )
+        update_obstacle(obstacles, row, column, frame_rows, frame_columns, garbage_id)
     else:
-        for obstacle in [obstacle for obstacle in obstacles if obstacle.uid == garbage_id]:
-            obstacles.remove(obstacle)
+        remove_obstacle(obstacles, garbage_id)
         if garbage_id in obstacles_in_last_collisions:
             obstacles_in_last_collisions.remove(garbage_id)
             await explode(canvas, row, column)
+
+
+def update_obstacle(obstacles, row, column, frame_rows, frame_columns, garbage_id):
+    obstacle_seq = set([obstacle for obstacle in obstacles if obstacle.uid == garbage_id])
+    if obstacle_seq:
+        obstacle, = obstacle_seq
+        obstacle.row, obstacle.column, obstacle.rows_size, obstacle.columns_size =\
+            row, column, frame_rows, frame_columns
+    else:
+        obstacles.append(
+            Obstacle(row, column, frame_rows, frame_columns, uid=garbage_id)
+        )
+
+
+def remove_obstacle(obstacles, garbage_id):
+    for obstacle in obstacles:
+        obstacles.remove(obstacle) if obstacle.uid == garbage_id else True
