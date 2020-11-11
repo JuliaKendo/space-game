@@ -21,7 +21,7 @@ from curses_tools import (
 TIC_TIMEOUT = 0.1
 MAX_PAUSE_BEFORE_BLINK = 20
 OFFSET_FROM_EDGE_OF_SCREEN = 1
-YEAR_OF_GUN_AVAILABILITY = 2020
+YEAR_OF_GUN_AVAILABILITY = 1960
 FRAME_OFFSET = 2
 KINDS_OF_STARS = ['+', '*', '.', ':']
 
@@ -34,6 +34,13 @@ obstacles_in_last_collisions = set()
 async def sleep(tics=1):
     for _ in range(tics):
         await asyncio.sleep(0)
+
+
+def init_colors():
+    curses.start_color()
+    curses.use_default_colors()
+    curses.init_pair(1, curses.COLOR_RED, -1)
+    curses.init_pair(2, curses.COLOR_YELLOW, -1)
 
 
 async def update_info_about_years(info_area, column, tics):
@@ -120,7 +127,7 @@ async def animate_spaceship(canvas, row, column, frames):
                 OFFSET_FROM_EDGE_OF_SCREEN,
                 min(column + columns_direction, max_column - frame_columns)
             )
-            draw_frame(canvas, row, column, frame)
+            draw_frame(canvas, row, column, frame, color=[1, 2])
             await asyncio.sleep(0)
             draw_frame(canvas, row, column, frame, negative=True)
             if space_pressed and year >= YEAR_OF_GUN_AVAILABILITY:
@@ -155,7 +162,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
     curses.beep()
 
     while 0 < row < max_row and 0 < column < max_column:
-        canvas.addstr(round(row), round(column), symbol)
+        canvas.addstr(round(row), round(column), symbol, curses.color_pair(1))
         await asyncio.sleep(0)
         canvas.addstr(round(row), round(column), ' ')
         row += rows_speed
@@ -222,6 +229,7 @@ def load_garbage_frames():
 def draw(canvas):
     global coroutines
     canvas.border(' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
+    init_colors()
     curses.curs_set(0)
     canvas.nodelay(True)
     rows, columns = canvas.getmaxyx()

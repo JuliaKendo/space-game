@@ -1,3 +1,6 @@
+import curses
+import random
+
 SPACE_KEY_CODE = 32
 LEFT_KEY_CODE = 260
 RIGHT_KEY_CODE = 261
@@ -36,7 +39,7 @@ def read_controls(canvas):
     return rows_direction, columns_direction, space_pressed
 
 
-def draw_frame(canvas, start_row, start_column, text, negative=False):
+def draw_frame(canvas, start_row, start_column, text, negative=False, color=None):
     """Draw multiline text fragment on canvas, erase text instead of drawing if negative=True is specified."""
 
     rows_number, columns_number = canvas.getmaxyx()
@@ -65,7 +68,10 @@ def draw_frame(canvas, start_row, start_column, text, negative=False):
                 continue
 
             symbol = symbol if not negative else ' '
-            canvas.addch(row, column, symbol)
+            if color and symbol in ('(', ')'):
+                canvas.addch(row, column, str.encode(symbol), curses.color_pair(random.choice(color)))
+            else:
+                canvas.addch(row, column, symbol)
 
 
 def get_frame_size(text):
